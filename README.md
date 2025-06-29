@@ -1,16 +1,96 @@
 # MCP Security Scanner
 
-A security scanner for MCP (Model Context Protocol) servers to detect malicious code and vulnerabilities.
+> **⚠️ DEPRECATED: This project is no longer actively maintained.**
+> 
+> **We recommend using [mcp-watch](https://github.com/kapilduraphe/mcp-watch) for comprehensive MCP security scanning.**
 
-## Features
+---
 
-- Scans JavaScript, TypeScript, and JSON files for security issues
-- Detects suspicious patterns like remote code execution, shell commands, and file system manipulation
-- Filters out false positives from legitimate package manager files
-- Fast scanning with minimal dependencies
-- Integrates seamlessly with Claude Code
+## 🚀 Recommended Alternative: mcp-watch
 
-## Installation
+**mcp-watch** is a superior, actively maintained MCP security scanner that provides:
+
+- **MCP-specific vulnerability detection** (prompt injection, tool poisoning, parameter injection)
+- **Research-backed patterns** from HiddenLayer, Invariant Labs, Trail of Bits
+- **Comprehensive coverage** of AI/ML security threats
+- **Professional reporting** with severity levels and JSON output
+- **Active development** with regular updates
+
+### Quick Start with mcp-watch
+
+```bash
+# Install
+npm install -g mcp-watch
+
+# Scan your MCP server
+mcp-watch scan /path/to/your/mcp-server
+
+# High severity issues only
+mcp-watch scan . --severity high
+
+# JSON output
+mcp-watch scan . --format json
+```
+
+---
+
+## Migration Guide
+
+### Why We Recommend mcp-watch
+
+After thorough testing, we found that **mcp-watch** provides superior security coverage for MCP servers:
+
+| Feature | This Scanner | mcp-watch |
+|---------|-------------|-----------|
+| MCP-specific vulnerabilities | ❌ | ✅ |
+| Prompt injection detection | ❌ | ✅ |
+| Tool poisoning detection | ❌ | ✅ |
+| Parameter injection detection | ❌ | ✅ |
+| Research-backed patterns | ❌ | ✅ |
+| Active development | ❌ | ✅ |
+| False positive rate | Low | Moderate |
+| General malware detection | ✅ | ❌ |
+
+### Comparison Example
+
+**Our scanner result** on timing-mcp-server:
+```
+✅ No security issues detected!
+```
+
+**mcp-watch result** on timing-mcp-server:
+```
+❌ Found 6 critical/high severity vulnerabilities
+⚠️ 23 total issues detected
+- Automatic content publishing risks
+- Untrusted data processing
+- Toxic agent flows
+```
+
+**Verdict:** mcp-watch correctly identified that legitimate MCP functionality can pose security risks, while our scanner missed these MCP-specific concerns.
+
+### Migration Steps
+
+1. **Uninstall this scanner:**
+   ```bash
+   rm ~/.local/bin/scan-mcp
+   ```
+
+2. **Install mcp-watch:**
+   ```bash
+   npm install -g mcp-watch
+   ```
+
+3. **Scan your MCP servers:**
+   ```bash
+   mcp-watch scan /path/to/your/mcp-server --severity high
+   ```
+
+## About This Scanner (Legacy)
+
+This scanner was designed for general malicious code detection but has been superseded by mcp-watch's MCP-specific capabilities.
+
+## Legacy Installation (Not Recommended)
 
 ```bash
 # Clone the repository

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MCP Security Scanner Installation Script
+# MCP Security Scanner Installation Script (DEPRECATED)
 # This script installs the scan-mcp command to ~/.local/bin
 
 set -e
@@ -12,7 +12,23 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🔧 Installing MCP Security Scanner...${NC}"
+echo -e "${RED}⚠️  DEPRECATION WARNING${NC}"
+echo -e "${YELLOW}This MCP Security Scanner has been deprecated.${NC}"
+echo -e "${YELLOW}We recommend using mcp-watch instead for better MCP security coverage.${NC}"
+echo ""
+echo -e "${BLUE}Recommended alternative:${NC}"
+echo "  npm install -g mcp-watch"
+echo "  mcp-watch scan /path/to/your/mcp-server"
+echo ""
+echo -e "${YELLOW}Continue with legacy installation? (y/N)${NC}"
+read -r response
+if [[ ! "$response" =~ ^[Yy]$ ]]; then
+    echo -e "${GREEN}Good choice! Install mcp-watch instead.${NC}"
+    exit 0
+fi
+
+echo ""
+echo -e "${BLUE}🔧 Installing MCP Security Scanner (Legacy)...${NC}"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
