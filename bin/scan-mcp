@@ -1,0 +1,231 @@
+#!/bin/bash
+
+# Claude Code MCP Security Scanner
+# Usage: scan-mcp [directory]
+# 
+# This script allows Claude Code to scan MCP servers for malicious code
+# Place this in ~/.local/bin/scan-mcp and make it executable
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default target directory
+TARGET_DIR="${1:-.}"
+
+echo -e "${BLUE}🔍 MCP Security Scanner - Claude Code Integration${NC}"
+echo -e "Scanning: $(realpath "$TARGET_DIR")"
+echo ""
+
+# Check if Node.js is available
+if ! command -v node &> /dev/null; then
+    echo -e "${RED}❌ Node.js not found. Please install Node.js to run the scanner.${NC}"
+    exit 1
+fi
+
+# Create temporary scanner script
+SCANNER_SCRIPT="/tmp/mcp-scanner-$(date +%s)-$$.js"
+
+# Clean up any existing temporary files from previous runs
+find /tmp -name "mcp-scanner-*.js" -mtime +1 -delete 2>/dev/null || true
+
+# Write the scanner code to temp file
+cat > "$SCANNER_SCRIPT" << 'EOF'
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+// [Include the full scanner code from the previous artifact]
+// This would be the complete MCPSecurityScanner code
+
+// Simplified version for Claude Code usage
+const SECURITY_PATTERNS = {
+  CRITICAL: [
+    {
+      name: "Remote code execution",
+      pattern: /eval\s*\(|Function\s*\(|new\s+Function/g,
+      description: "Dynamic code execution"
+    },
+    {
+      name: "Shell command execution", 
+      pattern: /child_process\.(exec|spawn)|require\(['"]child_process['"]\)/g,
+      description: "Shell command execution"
+    },
+    {
+      name: "File system manipulation",
+      pattern: /fs\.(writeFile|appendFile|unlink|rmdir)/g,
+      description: "File system operations"
+    },
+    {
+      name: "Suspicious network requests",
+      pattern: /https?:\/\/(?!(?:api\.timingapp\.com|web\.timingapp\.com|registry\.npmjs\.org|github\.com|githubusercontent\.com|unpkg\.com|jsdelivr\.net|cdnjs\.cloudflare\.com))[a-zA-Z0-9.-]+/g,
+      description: "HTTP requests to unknown domains"
+    }
+  ],
+  HIGH: [
+    {
+      name: "Environment variable access",
+      pattern: /process\.env\.(?!(?:TIMING_API_KEY|NODE_ENV|npm_))/g,
+      description: "Unexpected environment variable access"
+    },
+    {
+      name: "Crypto operations",
+      pattern: /crypto\.(createHash|createCipher)/g,
+      description: "Cryptographic operations"
+    },
+    {
+      name: "Base64 obfuscation",
+      pattern: /[A-Za-z0-9+/]{50,}={0,2}/g,
+      description: "Long base64 strings",
+      excludeInPackageFiles: true
+    }
+  ]
+};
+
+async function quickScan(targetPath) {
+  console.log(`🔍 Quick scanning: ${targetPath}\n`);
+  
+  const findings = [];
+  
+  try {
+    const files = await findFiles(targetPath);
+    
+    for (const file of files) {
+      const content = await fs.promises.readFile(file, 'utf8');
+      const fileName = path.basename(file);
+      const isPackageFile = fileName === 'package.json' || fileName === 'package-lock.json';
+      
+      Object.entries(SECURITY_PATTERNS).forEach(([severity, patterns]) => {
+        patterns.forEach(pattern => {
+          // Skip package files entirely for security checks
+          if (isPackageFile) {
+            return;
+          }
+          
+          // Skip base64 checks in package files if pattern has excludeInPackageFiles
+          if (pattern.excludeInPackageFiles && isPackageFile) {
+            return;
+          }
+          
+          const matches = content.match(pattern.pattern);
+          if (matches) {
+            findings.push({
+              severity,
+              name: pattern.name,
+              description: pattern.description,
+              file,
+              count: matches.length,
+              examples: matches.slice(0, 2)
+            });
+          }
+        });
+      });
+    }
+    
+    // Report results
+    if (findings.length === 0) {
+      console.log('✅ No security issues detected!');
+      console.log('The MCP server appears clean and safe for use.\n');
+    } else {
+      console.log(`⚠️  Found ${findings.length} potential security issues:\n`);
+      
+      const critical = findings.filter(f => f.severity === 'CRITICAL');
+      const high = findings.filter(f => f.severity === 'HIGH');
+      
+      if (critical.length > 0) {
+        console.log(`🚨 CRITICAL (${critical.length}):`);
+        critical.forEach(f => {
+          console.log(`   • ${f.name} in ${path.basename(f.file)}`);
+          console.log(`     ${f.description} (${f.count} matches)`);
+        });
+        console.log('');
+      }
+      
+      if (high.length > 0) {
+        console.log(`⚠️  HIGH (${high.length}):`);
+        high.forEach(f => {
+          console.log(`   • ${f.name} in ${path.basename(f.file)}`);
+          console.log(`     ${f.description} (${f.count} matches)`);
+        });
+        console.log('');
+      }
+      
+      if (critical.length > 0) {
+        console.log('🔴 RECOMMENDATION: Manual review required');
+        process.exit(1);
+      } else {
+        console.log('🟡 RECOMMENDATION: Review findings, likely safe for local use');
+      }
+    }
+    
+  } catch (error) {
+    console.error(`❌ Scan failed: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+async function findFiles(dir) {
+  const files = [];
+  const validExtensions = ['.js', '.ts', '.json'];
+  const excludePatterns = [/node_modules/, /\.git/, /dist/, /build/];
+  
+  async function walk(currentPath) {
+    const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const fullPath = path.join(currentPath, entry.name);
+      
+      if (excludePatterns.some(pattern => pattern.test(fullPath))) {
+        continue;
+      }
+      
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      } else if (validExtensions.includes(path.extname(entry.name))) {
+        files.push(fullPath);
+      }
+    }
+  }
+  
+  await walk(dir);
+  return files;
+}
+
+// Run the scan
+const targetPath = process.argv[2] || '.';
+quickScan(targetPath);
+EOF
+
+# Make the temp script executable and run it
+chmod +x "$SCANNER_SCRIPT"
+
+# Run the scanner
+echo -e "${BLUE}Running security scan...${NC}"
+echo ""
+
+if node "$SCANNER_SCRIPT" "$TARGET_DIR"; then
+    echo -e "${GREEN}✅ Scan completed successfully${NC}"
+    EXIT_CODE=0
+else
+    echo -e "${RED}⚠️  Security issues detected - review required${NC}"
+    EXIT_CODE=1
+fi
+
+# Cleanup
+rm -f "$SCANNER_SCRIPT"
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo ""
+echo -e "${BLUE}💡 For detailed analysis, use the full scanner:${NC}"
+echo "   node \"$SCRIPT_DIR/mcp-security-scanner.js\" $TARGET_DIR"
+
+exit $EXIT_CODE

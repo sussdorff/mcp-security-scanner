@@ -1,0 +1,34 @@
+{
+  "name": "mcp-security-scanner",
+  "version": "1.0.0",
+  "description": "Security scanner for MCP (Model Context Protocol) servers to detect malicious code and vulnerabilities",
+  "main": "bin/scan-mcp",
+  "bin": {
+    "scan-mcp": "bin/scan-mcp"
+  },
+  "scripts": {
+    "install": "./install.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sussdorff/mcp-security-scanner.git"
+  },
+  "keywords": [
+    "mcp",
+    "security",
+    "scanner",
+    "malware",
+    "vulnerability",
+    "model-context-protocol"
+  ],
+  "author": "sussdorff",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sussdorff/mcp-security-scanner/issues"
+  },
+  "homepage": "https://github.com/sussdorff/mcp-security-scanner#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
